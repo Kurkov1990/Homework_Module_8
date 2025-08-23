@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.homework'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    implementation 'com.h2database:h2:2.3.232'
+    implementation 'org.flywaydb:flyway-core:11.11.1'
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
