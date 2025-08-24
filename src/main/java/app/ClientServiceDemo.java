@@ -22,50 +22,25 @@ public class ClientServiceDemo {
         ClientService clientService = new ClientServiceImpl();
 
         try {
-            // Виконуємо міграції Flyway
             databaseInitService.migrateDatabase();
 
-            long clientId = createClient(clientService, "Test Client");
-            readAndLogClient(clientService, clientId);
-            updateClientName(clientService, clientId, "Test Client Updated");
-            listAllClients(clientService);
-            deleteClient(clientService, clientId);
+            long clientId = clientService.create("Test Client");
+            clientService.getById(clientId);
+            clientService.setName(clientId, "Test Client Updated");
+
+            List<Client> clients = clientService.listAll();
+            LOGGER.log(Level.INFO, () -> {
+                StringBuilder sb = new StringBuilder("Listing all clients:\n");
+                clients.forEach(c -> sb.append(c.getId()).append(" -> ").append(c.getName()).append("\n"));
+                return sb.toString();
+            });
+
+            clientService.deleteById(clientId);
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error in ClientServiceDemo", e);
         } finally {
-            // Закриваємо пул HikariCP
             Database.getInstance().close();
         }
-    }
-
-    private long createClient(ClientService service, String name) {
-        long id = service.create(name);
-        LOGGER.log(Level.INFO, () -> "Created client with ID: " + id);
-        return id;
-    }
-
-    private void readAndLogClient(ClientService service, long id) {
-        String name = service.getById(id);
-        LOGGER.log(Level.INFO, () -> "Client with ID " + id + " has name: " + name);
-    }
-
-    private void updateClientName(ClientService service, long id, String newName) {
-        service.setName(id, newName);
-        LOGGER.log(Level.INFO, () -> "Updated client name for ID " + id);
-    }
-
-    private void listAllClients(ClientService service) {
-        List<Client> clients = service.listAll();
-        LOGGER.log(Level.INFO, () -> {
-            StringBuilder sb = new StringBuilder("Listing all clients:\n");
-            clients.forEach(c -> sb.append(c.getId()).append(" -> ").append(c.getName()).append("\n"));
-            return sb.toString();
-        });
-    }
-
-    private void deleteClient(ClientService service, long id) {
-        service.deleteById(id);
-        LOGGER.log(Level.INFO, () -> "Deleted client with ID " + id);
     }
 }
