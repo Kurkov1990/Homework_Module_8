@@ -1,12 +1,12 @@
 package app;
 
+import app.dao.ClientDao;
+import app.dao.ClientDaoImpl;
 import app.db.Database;
-import app.model.Client;
 import app.service.ClientService;
 import app.service.ClientServiceImpl;
 import app.service.DatabaseInitService;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,7 +19,8 @@ public class ClientServiceDemo {
 
     private void runDemo() {
         DatabaseInitService databaseInitService = new DatabaseInitService();
-        ClientService clientService = new ClientServiceImpl();
+        ClientDao clientDao = new ClientDaoImpl();
+        ClientService clientService = new ClientServiceImpl(clientDao);
 
         try {
             databaseInitService.migrateDatabase();
@@ -27,14 +28,7 @@ public class ClientServiceDemo {
             long clientId = clientService.create("Test Client");
             clientService.getById(clientId);
             clientService.setName(clientId, "Test Client Updated");
-
-            List<Client> clients = clientService.listAll();
-            LOGGER.log(Level.INFO, () -> {
-                StringBuilder sb = new StringBuilder("Listing all clients:\n");
-                clients.forEach(c -> sb.append(c.getId()).append(" -> ").append(c.getName()).append("\n"));
-                return sb.toString();
-            });
-
+            clientService.listAll();
             clientService.deleteById(clientId);
 
         } catch (Exception e) {

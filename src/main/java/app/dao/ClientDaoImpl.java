@@ -1,6 +1,7 @@
-package app.data;
+package app.dao;
 
 import app.db.Database;
+import app.exception.ClientException;
 import app.model.Client;
 import app.service.ClientSql;
 import app.service.SqlExecutor;
@@ -11,16 +12,16 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClientDao {
+public class ClientDaoImpl implements ClientDao {
 
-    private static final Logger LOGGER = Logger.getLogger(ClientDao.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ClientDaoImpl.class.getName());
 
     private <T> T withConnection(SqlExecutor<T> action) {
         try (Connection conn = Database.getInstance().getConnection()) {
             return action.apply(conn);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Database error", e);
-            throw new RuntimeException(e);
+            throw new ClientException("Database operation failed", e);
         }
     }
 
@@ -28,12 +29,13 @@ public class ClientDao {
         return new Client(rs.getLong("ID"), rs.getString("NAME"));
     }
 
-    public long insert(String name) {
+    @Override
+    public long insertClient(String name) {
         return withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.INSERT, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, name);
                 if (stmt.executeUpdate() == 0) {
-                    throw new SQLException("Creating client failed, no rows affected.");
+                    throw new ClientException("Creating client failed, no rows affected.");
                 }
 
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
@@ -42,13 +44,16 @@ public class ClientDao {
                         LOGGER.info(() -> "Client created with ID: " + id);
                         return id;
                     } else {
-                        throw new SQLException("Creating client failed, no ID obtained.");
+                        throw new ClientException("Creating client failed, no ID obtained.");
                     }
                 }
+            } catch (SQLException e) {
+                throw new ClientException("Error inserting client into database", e);
             }
         });
     }
 
+    @Override
     public Client findById(long id) {
         return withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.SELECT_BY_ID)) {
@@ -60,37 +65,46 @@ public class ClientDao {
                         return null;
                     }
                 }
+            } catch (SQLException e) {
+                throw new ClientException("Error fetching client with id " + id, e);
             }
         });
     }
 
+    @Override
     public void updateName(long id, String name) {
         withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.UPDATE)) {
                 stmt.setString(1, name);
                 stmt.setLong(2, id);
                 if (stmt.executeUpdate() == 0) {
-                    throw new SQLException("Client with id " + id + " not found");
+                    throw new ClientException("Client with id " + id + " not found");
                 }
                 LOGGER.info(() -> "Updated client ID " + id + " to name: " + name);
                 return null;
+            } catch (SQLException e) {
+                throw new ClientException("Error updating client with id " + id, e);
             }
         });
     }
 
+    @Override
     public void delete(long id) {
         withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.DELETE)) {
                 stmt.setLong(1, id);
                 if (stmt.executeUpdate() == 0) {
-                    throw new SQLException("Client with id " + id + " not found");
+                    throw new ClientException("Client with id " + id + " not found");
                 }
                 LOGGER.info(() -> "Deleted client with ID: " + id);
                 return null;
+            } catch (SQLException e) {
+                throw new ClientException("Error deleting client with id " + id, e);
             }
         });
     }
 
+    @Override
     public List<Client> findAll() {
         return withConnection(conn -> {
             List<Client> clients = new ArrayList<>();
@@ -99,6 +113,8 @@ public class ClientDao {
                 while (rs.next()) {
                     clients.add(mapClient(rs));
                 }
+            } catch (SQLException e) {
+                throw new ClientException("Error fetching clients list", e);
             }
             LOGGER.info(() -> "Listed " + clients.size() + " clients from database");
             return clients;
