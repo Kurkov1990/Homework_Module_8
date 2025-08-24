@@ -12,8 +12,6 @@ import java.util.logging.Logger;
 
 public class ClientServiceImpl implements ClientService {
 
-    ClientValidator validaton = new ClientValidator();
-
     private static final Logger LOGGER = Logger.getLogger(ClientServiceImpl.class.getName());
     private final ClientValidator validator = new ClientValidator();
 
@@ -33,7 +31,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public long create(String name) {
-        validaton.validateClientName(name);
+        validator.validateClientName(name);
 
         return withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.INSERT, Statement.RETURN_GENERATED_KEYS)) {
@@ -57,7 +55,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public String getById(long id) {
-        validaton.validateId(id);
+        validator.validateId(id);
 
         return withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.SELECT_BY_ID)) {
@@ -77,8 +75,8 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void setName(long id, String name) {
-        validaton.validateId(id);
-        validaton.validateClientName(name);
+        validator.validateId(id);
+        validator.validateClientName(name);
 
         withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.UPDATE)) {
@@ -95,7 +93,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void deleteById(long id) {
-        validaton.validateId(id);
+        validator.validateId(id);
 
         withConnection(conn -> {
             try (PreparedStatement stmt = conn.prepareStatement(ClientSql.DELETE)) {
